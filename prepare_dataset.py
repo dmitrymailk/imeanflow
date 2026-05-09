@@ -18,8 +18,10 @@ import os
 import jax
 from absl import app, flags
 
+from utils.distributed_util import initialize_distributed
+
 # Initialize JAX distributed processing
-jax.distributed.initialize()
+initialize_distributed()
 
 from utils.data_util import compute_latent_dataset
 from utils.fid_util import compute_fid_stats

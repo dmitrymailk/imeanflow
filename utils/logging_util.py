@@ -7,7 +7,11 @@ from absl import logging
 
 import numpy as np
 from PIL import Image
-import wandb
+
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 
 def log_for_0(*args):
@@ -90,11 +94,15 @@ class MetricsTracker:
         Incorporate one step's metrics (per-replica JAX arrays) into the running sum.
         Call this once per training step.
         """
-        local_mean = jax.tree_map(self._mean_over_local_devices, metrics_step_tree)
+        local_mean = jax.tree_util.tree_map(
+            self._mean_over_local_devices, metrics_step_tree
+        )
         if self._sum is None:
             self._sum = local_mean
         else:
-            self._sum = jax.tree_map(lambda s, x: s + x, self._sum, local_mean)
+            self._sum = jax.tree_util.tree_map(
+                lambda s, x: s + x, self._sum, local_mean
+            )
         self._n += 1
 
     def finalize(self):
@@ -105,7 +113,7 @@ class MetricsTracker:
         if self._n == 0:
             return {}
 
-        out = jax.tree_map(
+        out = jax.tree_util.tree_map(
             lambda s: float(np.asarray(s / self._n, dtype=np.float64).mean()),
             self._sum,
         )
@@ -124,10 +132,19 @@ class Writer:
         self.use_wandb = config.logging.use_wandb
 
         if self.use_wandb:
+            if wandb is None:
+                raise ImportError(
+                    "wandb is not installed, but logging.use_wandb=True. "
+                    "Either install wandb or set logging.use_wandb=False."
+                )
             wandb.init(
                 project=config.logging.wandb_project,
-                entity=config.logging.wandb_entity if config.logging.wandb_entity else None,
-                notes=config.logging.wandb_notes if config.logging.wandb_notes else None,
+                entity=(
+                    config.logging.wandb_entity if config.logging.wandb_entity else None
+                ),
+                notes=(
+                    config.logging.wandb_notes if config.logging.wandb_notes else None
+                ),
                 tags=config.logging.wandb_tags if config.logging.wandb_tags else None,
                 dir="/tmp",  # avoid writing to workdir
                 settings=wandb.Settings(_service_wait=60),
@@ -165,7 +182,7 @@ class Writer:
                 v = v.transpose((1, 2, 0))
             return Image.fromarray(v)
 
-        if self.use_wandb:    
+        if self.use_wandb:
             wandb.log(
                 {k: wandb.Image(reduce_arr_func(v)) for k, v in image_dict.items()},
                 step=step,

@@ -13,11 +13,17 @@ This is the official JAX implementation for the paper [Improved Mean Flows: On t
 
 ## Initialization
 
-Run `install.sh` to install the dependencies (JAX+TPUs). Log in to WandB to track your experiments if needed.
+Run `install.sh` to install the dependencies. The script now auto-detects an NVIDIA GPU and installs GPU JAX by default; TPU users can still force TPU mode with `IMF_ACCELERATOR=tpu`. Log in to WandB to track your experiments if needed.
 
 ```bash
 bash scripts/install.sh
 wandb login YOUR_WANDB_API_KEY
+```
+
+For a non-TPU Linux workstation with an NVIDIA GPU, the expected path is:
+
+```bash
+IMF_ACCELERATOR=gpu bash scripts/install.sh
 ```
 
 ## Inference

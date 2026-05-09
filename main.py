@@ -2,7 +2,9 @@
 
 import jax
 
-jax.distributed.initialize()
+from utils.distributed_util import initialize_distributed
+
+initialize_distributed()
 
 from absl import app, flags
 from ml_collections import config_flags

@@ -90,13 +90,18 @@ class LatentManager:
 
         lowered = p_decode_fn.lower(p_vae_variable, z_dummy)
         compiled_decod_fn = lowered.compile()
-        Bflops = (
-            compiled_decod_fn.cost_analysis()[0]["flops"]
-            / 1e9
-            / (self.batch_size * jax.local_device_count())
-        )
         log_for_0("Compiling VAE decoder done in %.2f seconds." % (time.time() - now))
-        log_for_0(f"FLOPs (1e9): {Bflops}")
+
+        cost_analysis = compiled_decod_fn.cost_analysis()
+        if isinstance(cost_analysis, list):
+            cost_analysis = cost_analysis[0] if cost_analysis else {}
+
+        flops = cost_analysis.get("flops") if isinstance(cost_analysis, dict) else None
+        if flops is not None:
+            bflops = flops / 1e9 / (self.batch_size * jax.local_device_count())
+            log_for_0(f"FLOPs (1e9): {bflops}")
+        else:
+            log_for_0("FLOPs (1e9): unavailable for this JAX version")
 
         def call_p_compiled_model_fn(x, p_func, var):
             x = dist_prepare_batch_data(dict(x=x))["x"]

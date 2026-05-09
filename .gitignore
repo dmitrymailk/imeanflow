@@ -1,3 +1,7 @@
 **/__pycache__/
 ./tmp
 .DS_Store
+.venv
+_runs
+_smoke
+paper

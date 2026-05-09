@@ -12,7 +12,6 @@ from utils.logging_util import log_for_0
 from utils.state_util import print_params
 from utils.ema_util import update_ema
 
-
 #######################################################
 #                    Initialize                       #
 #######################################################
@@ -32,7 +31,7 @@ def initialized(key, image_size, model):
     variables = init({"params": key}, x, t, y)
     log_for_0("Initializing params done.")
 
-    param_count = sum(x.size for x in jax.tree_leaves(variables["params"]))
+    param_count = sum(x.size for x in jax.tree_util.tree_leaves(variables["params"]))
     log_for_0("Total trainable parameters: " + str(param_count))
     return variables, variables["params"]
 

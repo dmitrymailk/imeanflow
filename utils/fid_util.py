@@ -144,7 +144,7 @@ def compute_stats(
     np_feats = np_feats.reshape((-1, LDC, np_feats.shape[-1]))
     np_feats = np_feats.transpose((1, 0, 2))  # (LDC, N//LDC, feat_dim)
     all_feats = multihost_utils.process_allgather(np_feats)
-    all_feats = all_feats.reshape((-1, ) + all_feats.shape[2:])
+    all_feats = all_feats.reshape((-1,) + all_feats.shape[2:])
     all_feats = all_feats.transpose((1, 0, 2))  # (N//LDC, num_hosts*LDC, feat_dim)
     all_feats = all_feats.reshape(-1, all_feats.shape[-1])
     all_feats = jax.device_get(all_feats)
@@ -166,7 +166,7 @@ def compute_stats(
     np_logits = np_logits.reshape((-1, LDC, np_logits.shape[-1]))
     np_logits = np_logits.transpose((1, 0, 2))  # (LDC, N//LDC, num_classes)
     all_logits = multihost_utils.process_allgather(np_logits)
-    all_logits = all_logits.reshape((-1, ) + all_logits.shape[2:])
+    all_logits = all_logits.reshape((-1,) + all_logits.shape[2:])
     all_logits = all_logits.transpose((1, 0, 2))  # (N//LDC, num_hosts*LDC, num_classes)
     all_logits = all_logits.reshape(-1, all_logits.shape[-1])
     all_logits = jax.device_get(all_logits)
@@ -369,9 +369,10 @@ def compute_batch_features(batch_images, inception_net, batch_size):
     else:
         x_padded = x
 
-    # Extract Inception features
+    # Newer JAX/Flax paths already return pooled features as [B, 2048], while
+    # older paths may keep singleton spatial dimensions. Flatten both cases.
     pred, _, _ = inception_fn(inception_params, jax.lax.stop_gradient(x_padded))
-    pred = pred.squeeze(axis=1).squeeze(axis=1)
+    pred = pred.reshape(pred.shape[0], -1)
 
     # Return only the features for actual samples (remove padding)
     pred = pred[:actual_batch_size]
